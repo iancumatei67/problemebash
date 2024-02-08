@@ -5,7 +5,7 @@
 
 #If -d flag is passed, script must print additional information:
 #User: <username of the user running the script>
-#Script: <script name>        
+#Script: <script name>
 #Operation: <operation>
 #Numbers: <all space-separated numbers>
 
@@ -16,72 +16,72 @@ debug_info(){
 echo "User: $(whoami) "
 echo "Script: $0 "
 echo "Operation: $operation "
-echo "Numbers: ${numbers[*]} "
+echo "Numbers: ${numbers[@]} "
 
 }
 
-#Function to perform the operations
+# Initialize variables
+debug=false
+operation=""
+numbers=()
 
-do_operation(){
-
-  local result=${numbers[0]}
-
-  for ((i = 1; i < ${#numbers[@]}; i++)); do
-    case $operation in
-      "+") result=$((result + numbers[i])) ;;
-      "-") result=$((result - numbers[i])) ;;
-      "*") result=$((result * numbers[i])) ;;
-      "%") result=$((result % numbers[i])) ;;
-      *) echo "Invalid operation: $operation"; exit 1 ;;
-    esac
-  done
-
-  echo "$result"
-}
-#Parse command line arguments using getopts
-
-while getopts ":o:n:d" opt; do
-  case "$opt" in
-
-	o) 
-	  operation="$OPTARG" 
-
-;;
-	n) 
-	  numbers="$OPTARG"
-;;
-	d)
-	  debug=true
-
-;;
-	\?) 
-	   echo "Invalid option: -$OPTARG "
-           exit 1
-
-;;
-	:)
-	   echo " Option -$OPTARG requires an argument"; exit 1
-;;
-
+while getopts "o:n:d" opt; do
+  case $opt in
+    o)
+      operation="$OPTARG"
+      ;;
+    n)
+      shift $((OPTIND-2))
+      numbers=("$@")
+      break
+      ;;
+    d)
+      debug=true;
+      ;;
+    \?)
+      echo "Invalid option -$OPTARG" >&2
+      exit 1
+      ;;
   esac
 done
 
-#Check if operation is provided 
+case $operation in
+  +)
+    result=0
+    for num in "${numbers[@]}"; do
+      result=$((result + num))
+    done
+    ;;
+  -)
+    result="${numbers[0]}"
+    for ((i=1; i<${#numbers[@]}; i++)); do
+      result=$((result - numbers[i]))
+    done
+    ;;
+  \*)
+    result=1
+    shift
+    for num in "${numbers[@]}"; do
+      result=$((result * num))
+    done
+    ;;
+  %)
+    result="${numbers[0]}"
+    for ((i=1; i<${#numbers[@]}; i++)); do
+      result=$((result % numbers[i]))
+    done
+    ;;
+  *)
+    echo "Invalid operation: $operation"
+    exit 1
+    ;;
+esac
 
-if [[ -z "$operation" ]] || [[ ${#numbers[@]} -eq 0 ]]; then
-   echo " You must use : $0 -o <operation> -n <numbers> [-d] "
-   exit 1
-fi
-echo "Result=$(do_operation)"
-
-
-#Display debug info if -d flag is passed
-
-if [[ "$debug" ]]; then 
+if [ "$debug" = true ]; then
   debug_info
 fi
+echo "Result: $result"
 
-	
 
 
 
